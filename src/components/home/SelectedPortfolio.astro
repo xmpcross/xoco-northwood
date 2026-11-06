@@ -1,0 +1,24 @@
+---
+import CompanyItem from "@/components/portfolio/CompanyItem.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { home } from "@/config/home";
+import { featuredCompanies, getCompanies } from "@/lib/portfolio";
+
+const companies = await getCompanies();
+const selected = featuredCompanies(companies, home.portfolio.count);
+---
+
+{
+  selected.length > 0 && (
+    <section class="section shell" aria-labelledby="portfolio-title">
+      <SectionHead
+        id="portfolio-title"
+        title={home.portfolio.title}
+        link={{ label: `All ${companies.length} companies`, href: "/portfolio/" }}
+      />
+      <ul class="reveal mt-12 grid gap-3 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4" data-view="grid">
+        {selected.map((company) => <CompanyItem company={company} />)}
+      </ul>
+    </section>
+  )
+}

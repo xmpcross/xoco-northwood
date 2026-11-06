@@ -1,0 +1,23 @@
+---
+import Funds from "@/components/home/Funds.astro";
+import Hero from "@/components/home/Hero.astro";
+import Journal from "@/components/home/Journal.astro";
+import Partners from "@/components/home/Partners.astro";
+import Sectors from "@/components/home/Sectors.astro";
+import SelectedPortfolio from "@/components/home/SelectedPortfolio.astro";
+import Stats from "@/components/home/Stats.astro";
+import PitchBand from "@/components/ui/PitchBand.astro";
+import { home } from "@/config/home";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout overlayHeader>
+  <Hero />
+  <Stats />
+  <SelectedPortfolio />
+  <Sectors />
+  <Partners />
+  <Funds />
+  <Journal />
+  <PitchBand title={home.closing.title} text={home.closing.lead} />
+</BaseLayout>

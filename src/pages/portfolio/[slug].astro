@@ -1,0 +1,178 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import { Image } from "astro:assets";
+import { render } from "astro:content";
+import EntryCard from "@/components/insights/EntryCard.astro";
+import CompanyItem from "@/components/portfolio/CompanyItem.astro";
+import FundingHistory from "@/components/portfolio/FundingHistory.astro";
+import CompanyLogo from "@/components/ui/CompanyLogo.astro";
+import Icon from "@/components/ui/Icon.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getInsights } from "@/lib/insights";
+import {
+  getCompanies,
+  relatedCompanies,
+  sectorHref,
+  sectorLabel,
+  statusLabel,
+  statusOf,
+} from "@/lib/portfolio";
+import { companySchema } from "@/lib/schema";
+import { getTeam, personHref, teamById } from "@/lib/team";
+
+export const getStaticPaths = (async () => {
+  const companies = await getCompanies();
+  return companies.map((company) => ({
+    params: { slug: company.id },
+    props: { company, related: relatedCompanies(company, companies) },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { company, related } = Astro.props;
+const { Content } = await render(company);
+const { name, tagline, sector, stage, invested, fund, founded, hq, website, founders } = company.data;
+const team = teamById(await getTeam());
+const partner = team.get(company.data.partner.id);
+const status = statusOf(company);
+const mentions = (await getInsights()).filter((entry) => entry.data.companies.some((ref) => ref.id === company.id)).slice(0, 3);
+
+const facts = [
+  { label: "Sector", value: sectorLabel(sector), href: sectorHref(sector) },
+  { label: "First investment", value: `${stage}, ${invested}` },
+  { label: "Fund", value: fund, href: "/funds/" },
+  { label: "Founded", value: String(founded) },
+  { label: "Headquarters", value: hq },
+];
+---
+
+<BaseLayout title={name} description={`${name}: ${tagline}. A ${sectorLabel(sector).toLowerCase()} company Northwood first backed at ${stage} in ${invested}.`} structuredData={companySchema(company)}>
+  <article>
+    <header class="shell pt-12 pb-14 sm:pt-16 lg:pb-20">
+      <a href="/portfolio/" class="rise label group inline-flex items-center gap-2 hover:text-ink">
+        <Icon name="arrow-left" class="size-3.5" />
+        <span class="link">Portfolio</span>
+      </a>
+      <div class="rise mt-14 lg:mt-20" style="--i:1">
+        <CompanyLogo id={company.id} name={name} class="text-[clamp(1.4rem,1.1rem+1.2vw,2rem)]" />
+      </div>
+      <h1 class="rise mt-10 max-w-[18ch] text-display-lg" style="--i:2">
+        <span class="sr-only">{name}: </span>{tagline}
+      </h1>
+      <p class="rise label status mt-8 text-[0.9375rem]! text-ink!" data-status={status} style="--i:3">{statusLabel(company)}</p>
+    </header>
+
+    <div class="shell grid gap-14 border-t border-line pt-12 pb-24 lg:grid-cols-12 lg:gap-10 lg:pt-16 lg:pb-32">
+      <aside class="lg:col-span-4">
+        <dl class="grid grid-cols-2 gap-x-6 gap-y-7 lg:grid-cols-1">
+          {
+            facts.map((fact) => (
+              <div>
+                <dt class="label">{fact.label}</dt>
+                <dd class="mt-1">
+                  {fact.href ? (
+                    <a href={fact.href} class="link-quiet">
+                      {fact.value}
+                    </a>
+                  ) : (
+                    fact.value
+                  )}
+                </dd>
+              </div>
+            ))
+          }
+          {
+            website && (
+              <div>
+                <dt class="label">Website</dt>
+                <dd class="mt-1">
+                  <a href={website} class="group inline-flex items-center gap-1.5" rel="noopener">
+                    <span class="link">{new URL(website).hostname}</span>
+                    <Icon name="arrow-up-right" class="arrow arrow-out size-3.5" />
+                  </a>
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+
+        {
+          partner && (
+            <a href={personHref(partner)} class="group mt-12 flex items-center gap-4">
+              <Image src={partner.data.portrait} alt="" widths={[112, 168]} sizes="3.5rem" class="portrait size-14 object-cover object-top" />
+              <span class="leading-snug">
+                <span class="label block">Lead partner</span>
+                <span class="link">{partner.data.name}</span>
+              </span>
+            </a>
+          )
+        }
+      </aside>
+
+      <div class="min-w-0 lg:col-span-7 lg:col-start-6">
+        <div class="prose">
+          <Content />
+        </div>
+
+        {
+          founders.length > 0 && (
+            <section class="mt-14" aria-labelledby="founders-title">
+              <h2 id="founders-title" class="label">
+                Founders
+              </h2>
+              <ul class="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                {founders.map((founder) => (
+                  <li>
+                    <p class="text-lg">{founder.name}</p>
+                    <p class="label">{founder.role}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <FundingHistory company={company} />
+      </div>
+    </div>
+  </article>
+
+  {
+    mentions.length > 0 && (
+      <section class="section bg-surface" aria-labelledby="mentions-title">
+        <div class="shell">
+          <h2 id="mentions-title" class="text-display-md">
+            {name} in the journal
+          </h2>
+          <div class="mt-12 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+            {mentions.map((entry) => (
+              <EntryCard entry={entry} team={team} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    related.length > 0 && (
+      <section class="section shell" aria-labelledby="related-title">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h2 id="related-title" class="text-display-md">
+            More in {sectorLabel(sector).toLowerCase()}
+          </h2>
+          <a href={sectorHref(sector)} class="group inline-flex items-center gap-2 font-medium">
+            <span class="link">About our {sectorLabel(sector).toLowerCase()} investing</span>
+            <Icon name="arrow-right" class="arrow" />
+          </a>
+        </div>
+        <ul class="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-view="grid">
+          {related.map((other) => (
+            <CompanyItem company={other} />
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,240 @@
+---
+import CompanyItem from "@/components/portfolio/CompanyItem.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { portfolioPage, sectors } from "@/config/portfolio";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getCompanies, portfolioStats } from "@/lib/portfolio";
+
+const companies = await getCompanies();
+const stats = portfolioStats(companies);
+const statuses = [
+  { value: "", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "exited", label: "Exited" },
+];
+---
+
+<BaseLayout title={portfolioPage.title} description={portfolioPage.lead}>
+  <PageHeader title={portfolioPage.title} lead={portfolioPage.lead} />
+
+  <section class="shell pb-24 lg:pb-32" aria-label="Companies">
+    <form class="filters rise grid grid-cols-2 gap-x-3 gap-y-4 pb-8 sm:gap-x-4 lg:grid-cols-[1fr_1fr_auto_1.3fr]" style="--i:2" hidden data-filters>
+      <div class="grid gap-1.5">
+        <label for="filter-sector" class="label">Sector</label>
+        <select id="filter-sector" name="sector" class="field select" data-filter="sector">
+          <option value="">All sectors</option>
+          {stats.bySector.map((row) => <option value={row.key}>{sectors[row.key].label} ({row.count})</option>)}
+        </select>
+      </div>
+      <div class="grid gap-1.5">
+        <label for="filter-stage" class="label">First investment</label>
+        <select id="filter-stage" name="stage" class="field select" data-filter="stage">
+          <option value="">All stages</option>
+          {stats.byStage.map((row) => <option value={row.key}>{row.key} ({row.count})</option>)}
+        </select>
+      </div>
+      <fieldset class="col-span-2 grid gap-1.5 lg:col-span-1">
+        <legend class="label mb-1.5">Status</legend>
+        <div class="segmented flex h-12">
+          {
+            statuses.map((status) => (
+              <label class="segment">
+                <input type="radio" name="status" value={status.value} class="sr-only" checked={status.value === ""} data-filter="status" />
+                <span>{status.label}</span>
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+      <div class="col-span-2 grid gap-1.5 lg:col-span-1">
+        <label for="filter-search" class="label">Search</label>
+        <div class="relative">
+          <Icon name="search" class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted" />
+          <input id="filter-search" name="q" type="search" autocomplete="off" placeholder="Company or keyword" class="field pl-10" data-filter="q" />
+        </div>
+      </div>
+    </form>
+
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+      <p class="label tabular" aria-live="polite" data-count>{companies.length} companies</p>
+      <div class="flex items-center gap-5" hidden data-view-controls>
+        <button type="button" class="label link-quiet hover:text-ink" hidden data-clear>Clear filters</button>
+        <div class="flex gap-1" role="group" aria-label="Layout">
+          <button type="button" class="view-toggle" aria-pressed="true" aria-label="Grid" title="Grid" data-view-button="grid">
+            <Icon name="layout-grid" class="size-4" />
+          </button>
+          <button type="button" class="view-toggle" aria-pressed="false" aria-label="List" title="List" data-view-button="list">
+            <Icon name="list" class="size-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ul class="directory mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-view="grid" data-directory>
+      {companies.map((company) => <CompanyItem company={company} />)}
+    </ul>
+
+    <div class="py-20 text-center" hidden data-empty>
+      <p class="text-title">No companies match.</p>
+      <p class="mt-3 text-muted">Try another sector or stage, or <button type="button" class="link-quiet text-ink" data-clear>clear the filters</button>.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .segmented {
+    padding: 3px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+
+  .segment {
+    display: grid;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .segment span {
+    display: grid;
+    place-items: center;
+    padding-inline: 1rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    color: var(--muted);
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .segment:hover span {
+    color: var(--ink);
+  }
+
+  .segment input:checked + span {
+    background: var(--ink);
+    color: var(--page);
+  }
+
+  .segment input:focus-visible + span {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  .view-toggle {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--muted);
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+
+  .view-toggle:hover {
+    color: var(--ink);
+  }
+
+  .view-toggle[aria-pressed="true"] {
+    background: var(--wash);
+    color: var(--ink);
+  }
+
+  .directory[data-view="list"] {
+    display: block;
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-filters]");
+  const list = document.querySelector<HTMLElement>("[data-directory]");
+  const count = document.querySelector<HTMLElement>("[data-count]");
+  const empty = document.querySelector<HTMLElement>("[data-empty]");
+  const controls = document.querySelector<HTMLElement>("[data-view-controls]");
+
+  if (form && list && count && empty && controls) {
+    const items = [...list.querySelectorAll<HTMLElement>("[data-company]")];
+    const viewButtons = [...controls.querySelectorAll<HTMLButtonElement>("[data-view-button]")];
+    const clearButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-clear]")];
+    const sector = form.querySelector<HTMLSelectElement>('[data-filter="sector"]')!;
+    const stage = form.querySelector<HTMLSelectElement>('[data-filter="stage"]')!;
+    const search = form.querySelector<HTMLInputElement>('[data-filter="q"]')!;
+    const statusInputs = [...form.querySelectorAll<HTMLInputElement>('[data-filter="status"]')];
+    let view = "grid";
+
+    const hasOption = (select: HTMLSelectElement, value: string) => [...select.options].some((option) => option.value === value);
+
+    const read = () => {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get("sector") ?? "";
+      const g = params.get("stage") ?? "";
+      const st = params.get("status") ?? "";
+      sector.value = hasOption(sector, s) ? s : "";
+      stage.value = hasOption(stage, g) ? g : "";
+      statusInputs.forEach((input) => (input.checked = input.value === (["active", "exited"].includes(st) ? st : "")));
+      search.value = params.get("q") ?? "";
+      view = params.get("view") === "list" ? "list" : "grid";
+    };
+
+    const apply = (write = true) => {
+      const status = statusInputs.find((input) => input.checked)?.value ?? "";
+      const words = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      items.forEach((item) => {
+        const match =
+          (!sector.value || item.dataset.sector === sector.value) &&
+          (!stage.value || item.dataset.stage === stage.value) &&
+          (!status || item.dataset.status === status) &&
+          words.every((word) => item.dataset.text?.includes(word));
+        item.hidden = !match;
+        if (match) shown += 1;
+      });
+
+      const filtered = Boolean(sector.value || stage.value || status || words.length);
+      count.textContent = filtered ? `${shown} of ${items.length} companies` : `${items.length} companies`;
+      empty.hidden = shown > 0;
+      clearButtons.forEach((button) => (button.hidden = !filtered && button.closest("[data-empty]") === null));
+      list.dataset.view = view;
+      viewButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.viewButton === view)));
+
+      if (!write) return;
+      const params = new URLSearchParams();
+      if (sector.value) params.set("sector", sector.value);
+      if (stage.value) params.set("stage", stage.value);
+      if (status) params.set("status", status);
+      if (search.value.trim()) params.set("q", search.value.trim());
+      if (view === "list") params.set("view", "list");
+      const query = params.toString();
+      history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+    };
+
+    form.hidden = false;
+    controls.hidden = false;
+    read();
+    apply(false);
+
+    form.addEventListener("input", () => apply());
+    form.addEventListener("submit", (event) => event.preventDefault());
+    viewButtons.forEach((button) =>
+      button.addEventListener("click", () => {
+        view = button.dataset.viewButton ?? "grid";
+        apply();
+      }),
+    );
+    clearButtons.forEach((button) =>
+      button.addEventListener("click", () => {
+        sector.value = "";
+        stage.value = "";
+        search.value = "";
+        statusInputs.forEach((input) => (input.checked = input.value === ""));
+        apply();
+      }),
+    );
+    window.addEventListener("popstate", () => {
+      read();
+      apply(false);
+    });
+  }
+</script>

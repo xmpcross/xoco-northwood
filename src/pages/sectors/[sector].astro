@@ -1,0 +1,142 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import EntryCard from "@/components/insights/EntryCard.astro";
+import CompanyItem from "@/components/portfolio/CompanyItem.astro";
+import PersonCard from "@/components/team/PersonCard.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PitchBand from "@/components/ui/PitchBand.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { sectorKeys, sectors } from "@/config/portfolio";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getInsights } from "@/lib/insights";
+import { getCompanies, portfolioHref, statusOf } from "@/lib/portfolio";
+import { getTeam, teamById } from "@/lib/team";
+
+export const getStaticPaths = (() =>
+  sectorKeys.map((sector) => ({ params: { sector }, props: { sector } }))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { sector } = Astro.props;
+const info = sectors[sector];
+const companies = (await getCompanies()).filter((company) => company.data.sector === sector);
+const ids = new Set(companies.map((company) => company.id));
+const allTeam = await getTeam();
+const team = teamById(allTeam);
+const people = allTeam.filter((person) => person.data.focus.includes(sector));
+const entries = (await getInsights()).filter((entry) => entry.data.companies.some((ref) => ids.has(ref.id))).slice(0, 3);
+const exited = companies.filter((company) => statusOf(company) === "exited").length;
+const first = companies.length ? Math.min(...companies.map((company) => company.data.invested)) : undefined;
+const figures = [
+  { value: String(companies.length), label: companies.length === 1 ? "company" : "companies" },
+  { value: String(companies.length - exited), label: "active" },
+  { value: String(exited), label: exited === 1 ? "exit" : "exits" },
+  ...(first ? [{ value: String(first), label: "first investment" }] : []),
+];
+---
+
+<BaseLayout title={info.label} description={`${info.description} ${info.thesis[0]}`.slice(0, 300)}>
+  <section class="sector-head on-night grain glow relative isolate overflow-hidden" aria-labelledby="sector-title">
+    <div class="shell pt-12 pb-16 sm:pt-16 lg:pb-24">
+      <a href="/sectors/" class="rise label group inline-flex items-center gap-2 hover:text-night-ink">
+        <Icon name="arrow-left" class="size-3.5" />
+        <span class="link">Sectors</span>
+      </a>
+      <h1 id="sector-title" class="rise mt-12 text-display-xl lg:mt-16" style="--i:1">{info.label}</h1>
+      <div class="mt-10 grid gap-12 lg:grid-cols-12 lg:items-end lg:gap-10">
+        <p class="rise max-w-2xl text-lead text-night-ink/85 lg:col-span-7" style="--i:2">{info.thesis[0]}</p>
+        <dl class="rise grid grid-cols-2 gap-x-8 gap-y-8 lg:col-span-4 lg:col-start-9" style="--i:3">
+          {
+            figures.map((figure) => (
+              <div class="flex flex-col-reverse gap-2">
+                <dt class="label">{figure.label}</dt>
+                <dd class="text-stat text-[clamp(2rem,1.6rem+1.6vw,3rem)]">{figure.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="section shell grid gap-12 lg:grid-cols-12 lg:gap-10" aria-labelledby="themes-title">
+    <div class="reveal lg:col-span-5">
+      <h2 id="themes-title" class="text-display-md">What we look for</h2>
+      {info.thesis.slice(1).map((paragraph) => <p class="mt-6 max-w-md text-muted">{paragraph}</p>)}
+    </div>
+    <ul class="lg:col-span-6 lg:col-start-7">
+      {
+        info.themes.map((theme, i) => (
+          <li class="reveal border-t border-line py-7 first:border-t-0 first:pt-0" style={`--i:${i}`}>
+            <h3 class="text-title">{theme.title}</h3>
+            <p class="mt-2 text-muted">{theme.text}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  {
+    companies.length > 0 && (
+      <section class="shell pb-[clamp(5rem,3.4rem+6vw,9rem)]" aria-labelledby="companies-title">
+        <SectionHead
+          id="companies-title"
+          title={`${info.label} companies`}
+          link={{ label: "Open in the directory", href: portfolioHref({ sector }) }}
+        />
+        <ul class="reveal mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-view="grid">
+          {companies.map((company) => (
+            <CompanyItem company={company} />
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    people.length > 0 && (
+      <section class="section bg-surface" aria-labelledby="people-title">
+        <div class="shell">
+          <h2 id="people-title" class="reveal text-display-md">
+            Who to talk to
+          </h2>
+          <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-5">
+            {people.map((person, i) => (
+              <li class="reveal" style={`--i:${i}`}>
+                <PersonCard person={person} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    entries.length > 0 && (
+      <section class="section shell" aria-labelledby="writing-title">
+        <h2 id="writing-title" class="reveal text-display-md">
+          From the journal
+        </h2>
+        <div class="mt-12 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {entries.map((entry) => (
+            <EntryCard entry={entry} team={team} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <PitchBand title={`Building in ${info.label.toLowerCase()}?`} />
+</BaseLayout>
+
+<style>
+  .sector-head {
+    --grain: 0.35;
+    background: #141415;
+  }
+
+  .sector-head::before {
+    opacity: 0.45;
+  }
+</style>

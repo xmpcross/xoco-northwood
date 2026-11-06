@@ -1,0 +1,179 @@
+---
+import CompanyLogo from "@/components/ui/CompanyLogo.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { companyHref, sectorLabel, statusLabel, statusOf, type Company } from "@/lib/portfolio";
+
+interface Props {
+  company: Company;
+}
+
+const { company } = Astro.props;
+const { name, tagline, sector, stage, invested } = company.data;
+const status = statusOf(company);
+---
+
+<li
+  class="company"
+  data-company
+  data-sector={sector}
+  data-stage={stage}
+  data-status={status}
+  data-text={`${name} ${tagline}`.toLowerCase()}
+>
+  <a href={companyHref(company)} class="company-link group">
+    <span class="company-mark">
+      <CompanyLogo id={company.id} name={name} class="text-[1.05rem]" />
+    </span>
+    <span class="company-tagline">{tagline}</span>
+    <span class="company-sector label">{sectorLabel(sector)}</span>
+    <span class="company-stage label tabular">{stage}, {invested}</span>
+    <span class="company-status label status" data-status={status}>{statusLabel(company, false)}</span>
+    <Icon name="arrow-up-right" class="company-arrow arrow arrow-out" />
+  </a>
+</li>
+
+<style>
+  .company-link {
+    position: relative;
+    display: grid;
+    height: 100%;
+    color: var(--ink);
+    transition: background-color 0.3s;
+  }
+
+  .company-tagline {
+    color: var(--ink-soft);
+  }
+
+  .company-arrow {
+    color: var(--muted);
+  }
+
+  /* Grid tiles: the default, used on the homepage and the directory's grid view. */
+  :global([data-view="grid"]) .company-link {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr auto auto;
+    align-content: start;
+    min-height: 13rem;
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  :global([data-view="grid"]) .company-link:hover {
+    background: var(--wash);
+  }
+
+  :global([data-view="grid"]) .company-mark {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    min-height: 5rem;
+  }
+
+  @media (min-width: 40rem) {
+    :global([data-view="grid"]) .company-link {
+      min-height: 15.5rem;
+    }
+
+    :global([data-view="grid"]) .company-mark {
+      min-height: 7.5rem;
+    }
+  }
+
+  :global([data-view="grid"]) .company-tagline {
+    grid-column: 1 / -1;
+    min-height: 2.9em;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+  }
+
+  :global([data-view="grid"]) .company-sector {
+    grid-row: 3;
+    margin-top: 1.25rem;
+  }
+
+  :global([data-view="grid"]) .company-stage {
+    display: none;
+  }
+
+  :global([data-view="grid"]) .company-status {
+    grid-row: 3;
+    grid-column: 2;
+    margin-top: 1.25rem;
+  }
+
+  :global([data-view="grid"]) .company-arrow {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    opacity: 0;
+    transition:
+      opacity 0.3s,
+      transform 0.4s var(--ease-out-expo);
+  }
+
+  :global([data-view="grid"]) .company-link:hover .company-arrow {
+    opacity: 1;
+  }
+
+  /* List rows: logo, tagline, sector, entry, status. */
+  :global([data-view="list"]) .company-link {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 1.5rem;
+    align-items: center;
+    padding: 1.25rem 0;
+    box-shadow: inset 0 -1px 0 var(--line);
+  }
+
+  :global([data-view="list"]) .company-mark {
+    grid-column: 1 / -1;
+  }
+
+  :global([data-view="list"]) .company-tagline {
+    grid-column: 1 / -1;
+    font-size: 0.9375rem;
+  }
+
+  :global([data-view="list"]) .company-sector,
+  :global([data-view="list"]) .company-stage {
+    display: none;
+  }
+
+  :global([data-view="list"]) .company-arrow {
+    display: none;
+  }
+
+  @media (min-width: 48rem) {
+    :global([data-view="list"]) .company-link {
+      grid-template-columns: 12rem minmax(0, 1fr) 8rem 9rem 12rem 1rem;
+      padding: 1.1rem 0;
+    }
+
+    :global([data-view="list"]) .company-mark,
+    :global([data-view="list"]) .company-tagline {
+      grid-column: auto;
+    }
+
+    :global([data-view="list"]) .company-sector,
+    :global([data-view="list"]) .company-stage,
+    :global([data-view="list"]) .company-arrow {
+      display: inline-flex;
+    }
+
+    :global([data-view="list"]) .company-link:hover .company-tagline {
+      color: var(--ink);
+    }
+  }
+
+  @media (min-width: 48rem) and (max-width: 63.99rem) {
+    :global([data-view="list"]) .company-link {
+      grid-template-columns: 10rem minmax(0, 1fr) 8rem 1rem;
+    }
+
+    :global([data-view="list"]) .company-sector,
+    :global([data-view="list"]) .company-stage {
+      display: none;
+    }
+  }
+</style>

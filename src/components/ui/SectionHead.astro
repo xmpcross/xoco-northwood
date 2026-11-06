@@ -1,0 +1,23 @@
+---
+interface Props {
+  title: string;
+  /** Heading id, for `aria-labelledby` on the section. */
+  id: string;
+  lead?: string;
+  link?: { label: string; href: string };
+}
+
+const { title, id, lead, link } = Astro.props;
+---
+
+<div class="reveal mx-auto flex max-w-3xl flex-col items-center text-center">
+  <h2 id={id} class="text-display-lg">{title}</h2>
+  {lead && <p class="mt-5 max-w-xl text-lead text-muted">{lead}</p>}
+  {
+    link && (
+      <a href={link.href} class="btn btn-outline btn-sm mt-8">
+        {link.label}
+      </a>
+    )
+  }
+</div>

@@ -1,0 +1,47 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import EntryGrid from "@/components/insights/EntryGrid.astro";
+import InsightsHeader from "@/components/insights/InsightsHeader.astro";
+import Pagination from "@/components/insights/Pagination.astro";
+import { categories, categoryKeys, ENTRIES_PER_PAGE } from "@/config/insights";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { categoryHref, getInsights } from "@/lib/insights";
+import { getTeam, teamById } from "@/lib/team";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const entries = await getInsights();
+  return categoryKeys.flatMap((category) =>
+    paginate(
+      entries.filter((entry) => entry.data.category === category),
+      { params: { category }, props: { category }, pageSize: ENTRIES_PER_PAGE },
+    ),
+  );
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page, category } = Astro.props as Props;
+const { label, description } = categories[category];
+const team = teamById(await getTeam());
+---
+
+<BaseLayout
+  title={page.currentPage === 1 ? label : `${label}, page ${page.currentPage}`}
+  description={description}
+  prevUrl={page.url.prev}
+  nextUrl={page.url.next}
+>
+  <InsightsHeader title={label} lead={description} current={category} />
+  <div class="shell pb-24 lg:pb-32">
+    {
+      page.data.length > 0 ? (
+        <EntryGrid entries={page.data} team={team} />
+      ) : (
+        <p class="text-lead text-muted">
+          Nothing filed under {label.toLowerCase()} yet. <a href="/insights/" class="link-quiet text-ink">See every entry</a>.
+        </p>
+      )
+    }
+    <Pagination current={page.currentPage} last={page.lastPage} base={categoryHref(category)} />
+  </div>
+</BaseLayout>

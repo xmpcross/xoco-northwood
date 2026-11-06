@@ -1,0 +1,42 @@
+---
+interface Props {
+  /** The company's folder name in `src/content/companies`. */
+  id: string;
+  name: string;
+  class?: string;
+}
+
+/* A `logo.svg` beside a company's `index.md` is inlined so it takes the text colour. */
+const files = import.meta.glob<string>("/src/content/companies/*/logo.svg", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+
+const { id, name, class: className } = Astro.props;
+const raw = files[`/src/content/companies/${id}/logo.svg`];
+const svg = raw?.replace("<svg ", '<svg aria-hidden="true" focusable="false" ');
+---
+
+{
+  svg ? (
+    <span class:list={["company-logo inline-flex shrink-0 items-center", className]} role="img" aria-label={name} set:html={svg} />
+  ) : (
+    <span class:list={["company-logo company-name inline-flex shrink-0 items-center", className]}>{name}</span>
+  )
+}
+
+<style>
+  .company-logo :global(svg) {
+    display: block;
+    height: 1.5em;
+    width: auto;
+  }
+
+  .company-name {
+    font-size: 1.3em;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+</style>

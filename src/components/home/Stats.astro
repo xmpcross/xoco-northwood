@@ -1,0 +1,47 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import { home } from "@/config/home";
+import { formatMoney } from "@/lib/format";
+import { fundTotals } from "@/lib/funds";
+
+const { stats } = home;
+const totals = fundTotals();
+const figures = [
+  { value: formatMoney(totals.capital), label: "under management" },
+  { value: String(totals.companies), label: "companies backed" },
+  { value: String(totals.exits), label: "exits" },
+  { value: String(totals.since), label: "first fund" },
+];
+---
+
+<section class="stats on-night grain glow relative isolate overflow-hidden" aria-labelledby="stats-title">
+  <div class="shell flex flex-col items-center py-[clamp(5rem,3.4rem+6vw,9rem)] text-center">
+    <h2 id="stats-title" class="reveal max-w-[20ch] text-display-lg">{stats.title}</h2>
+    <p class="reveal mt-6 max-w-xl text-night-muted">{stats.text}</p>
+    <dl class="mt-16 grid w-full max-w-5xl grid-cols-2 gap-y-12 lg:mt-20 lg:grid-cols-4">
+      {
+        figures.map((figure, index) => (
+          <div class="reveal flex flex-col-reverse gap-3" style={`--i:${index}`}>
+            <dt class="label">{figure.label}</dt>
+            <dd class="text-stat">{figure.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+    <a href={stats.link.href} class="btn btn-light reveal mt-16">
+      {stats.link.label}
+      <Icon name="arrow-right" class="arrow" />
+    </a>
+  </div>
+</section>
+
+<style>
+  .stats {
+    --grain: 0.35;
+    background: #141415;
+  }
+
+  .stats::before {
+    opacity: 0.55;
+  }
+</style>

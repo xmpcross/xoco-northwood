@@ -1,0 +1,49 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import SectionHead from "@/components/ui/SectionHead.astro";
+import { home } from "@/config/home";
+import { sectorKeys, sectors } from "@/config/portfolio";
+import { getCompanies, sectorHref } from "@/lib/portfolio";
+
+const companies = await getCompanies();
+const rows = sectorKeys.map((key) => ({
+  key,
+  ...sectors[key],
+  count: companies.filter((company) => company.data.sector === key).length,
+}));
+---
+
+<section class="section bg-surface" aria-labelledby="sectors-title">
+  <div class="shell">
+    <SectionHead id="sectors-title" title={home.sectors.title} lead={home.sectors.lead} link={{ label: "All sectors", href: "/sectors/" }} />
+    <ul class="mt-12 lg:mt-16">
+      {
+        rows.map((row, index) => (
+          <li class="reveal" style={`--i:${index}`}>
+            <a
+              href={sectorHref(row.key)}
+              class="sector group grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-2 border-t border-line py-7 md:grid-cols-12 md:gap-x-10"
+            >
+              <span class="text-title md:col-span-4">{row.label}</span>
+              <span class="col-span-2 row-start-2 text-muted md:col-span-6 md:row-start-auto">{row.description}</span>
+              <span class="label flex items-center justify-end gap-3 tabular md:col-span-2">
+                {row.count} {row.count === 1 ? "company" : "companies"}
+                <Icon name="arrow-right" class="arrow text-ink" />
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .sector > span:first-child {
+    transition: transform 0.6s var(--ease-out-expo);
+  }
+
+  .sector:hover > span:first-child {
+    transform: translateX(0.5rem);
+  }
+</style>

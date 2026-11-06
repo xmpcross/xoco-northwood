@@ -1,0 +1,175 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import { getImage, Image } from "astro:assets";
+import { render } from "astro:content";
+import EntryCard from "@/components/insights/EntryCard.astro";
+import CompanyItem from "@/components/portfolio/CompanyItem.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { sectors } from "@/config/portfolio";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getInsights } from "@/lib/insights";
+import { getCompanies, sectorHref } from "@/lib/portfolio";
+import { personSchema } from "@/lib/schema";
+import { companiesLedBy, firstName, getTeam, personHref, teamById } from "@/lib/team";
+
+export const getStaticPaths = (async () => {
+  const team = await getTeam();
+  return team.map((person, index) => ({
+    params: { slug: person.id },
+    props: { person, next: team[(index + 1) % team.length] },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { person, next } = Astro.props;
+const { Content } = await render(person);
+const { name, role, location, portrait, focus, joined, previously, email, linkedin, x } = person.data;
+const team = teamById(await getTeam());
+const leads = companiesLedBy(person, await getCompanies());
+const writing = (await getInsights()).filter((entry) => entry.data.authors.some((ref) => ref.id === person.id)).slice(0, 3);
+const card = await getImage({ src: portrait, width: 1200, height: 630, fit: "cover", position: "top", format: "jpg" });
+const links = [
+  email && { label: "Email", href: `mailto:${email}`, icon: "social-envelope" },
+  linkedin && { label: "LinkedIn", href: linkedin, icon: "social-linkedin" },
+  x && { label: "X", href: x, icon: "social-twitter-x" },
+].filter((link): link is { label: string; href: string; icon: string } => Boolean(link));
+---
+
+<BaseLayout
+  title={name}
+  description={`${name} is ${role} at Northwood, based in ${location}.`}
+  image={card.src}
+  imageAlt={`Portrait of ${name}`}
+  structuredData={personSchema(person, card.src)}
+>
+  <article class="shell grid gap-12 pt-12 pb-24 sm:pt-16 lg:grid-cols-12 lg:gap-10 lg:pb-32">
+    <div class="lg:col-span-5">
+      <a href="/team/" class="rise label group inline-flex items-center gap-2 hover:text-ink">
+        <Icon name="arrow-left" class="size-3.5" />
+        <span class="link">Team</span>
+      </a>
+      <div class="rise media mt-10 aspect-4/5 max-w-md lg:max-w-none" style="--i:1">
+        <Image
+          src={portrait}
+          alt={`Portrait of ${name}`}
+          widths={[480, 720, 1000]}
+          sizes="(min-width: 1024px) 34rem, (min-width: 448px) 28rem, 100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="portrait size-full object-cover object-top"
+        />
+      </div>
+    </div>
+
+    <div class="lg:col-span-6 lg:col-start-7 lg:pt-24">
+      <h1 class="rise text-display-lg" style="--i:1">{name}</h1>
+      <p class="rise mt-4 text-lead text-muted" style="--i:2">{role}, {location}</p>
+
+      <div class="rise prose mt-12" style="--i:3">
+        <Content />
+      </div>
+
+      <dl class="mt-12 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-line pt-8">
+        {
+          focus.length > 0 && (
+            <div class="col-span-2">
+              <dt class="label">Focus</dt>
+              <dd class="mt-1">
+                {focus.map((sector, index) => (
+                  <>
+                    <a href={sectorHref(sector)} class="link-quiet">
+                      {sectors[sector].label}
+                    </a>
+                    {index < focus.length - 1 && ", "}
+                  </>
+                ))}
+              </dd>
+            </div>
+          )
+        }
+        {
+          previously && (
+            <div class="col-span-2">
+              <dt class="label">Previously</dt>
+              <dd class="mt-1">{previously}</dd>
+            </div>
+          )
+        }
+        {
+          joined && (
+            <div>
+              <dt class="label">At Northwood since</dt>
+              <dd class="mt-1 tabular">{joined}</dd>
+            </div>
+          )
+        }
+        <div>
+          <dt class="label">Office</dt>
+          <dd class="mt-1">{location}</dd>
+        </div>
+      </dl>
+
+      {
+        links.length > 0 && (
+          <ul class="mt-10 flex flex-wrap gap-2" aria-label={`Contact ${firstName(person)}`}>
+            {links.map((link) => (
+              <li>
+                <a href={link.href} class="btn btn-outline btn-sm" rel={link.href.startsWith("http") ? "noopener" : undefined}>
+                  <Icon name={link.icon} class="size-3.5" />
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </article>
+
+  {
+    leads.length > 0 && (
+      <section class="section bg-surface" aria-labelledby="leads-title">
+        <div class="shell">
+          <h2 id="leads-title" class="text-display-md">
+            Companies {firstName(person)} leads
+          </h2>
+          <ul class="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-view="grid">
+            {leads.map((company) => (
+              <CompanyItem company={company} />
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    writing.length > 0 && (
+      <section class="section shell" aria-labelledby="writing-title">
+        <h2 id="writing-title" class="text-display-md">
+          Writing
+        </h2>
+        <div class="mt-12 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {writing.map((entry) => (
+            <EntryCard entry={entry} team={team} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    next && next.id !== person.id && (
+      <nav class="border-t border-line" aria-label="Next profile">
+        <a href={personHref(next)} class="shell group flex items-center justify-between gap-6 py-10">
+          <span>
+            <span class="label block">Next</span>
+            <span class="text-title link">{next.data.name}</span>
+          </span>
+          <Icon name="arrow-right" class="arrow size-5" />
+        </a>
+      </nav>
+    )
+  }
+</BaseLayout>

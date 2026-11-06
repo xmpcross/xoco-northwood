@@ -1,0 +1,60 @@
+{
+  "name": "northwood-astro-theme",
+  "description": "An Astro theme for venture capital and investment firms: a filterable portfolio directory with company pages and funding histories, sector pages, partner profiles, an insights and investor-letters journal, fund statistics and a pitch form.",
+  "type": "module",
+  "version": "1.0.1",
+  "author": "Andrei Alba",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "keywords": [
+    "astro-theme",
+    "astro",
+    "venture-capital",
+    "vc",
+    "investment-firm",
+    "private-equity",
+    "portfolio",
+    "team",
+    "investor-letters",
+    "journal",
+    "blog",
+    "tailwindcss"
+  ],
+  "homepage": "https://northwood.xocoweb.workers.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xocothemes/northwood.git"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "check": "astro check",
+    "release:check": "npm run check && npm run build && npm run format:check",
+    "preview": "astro preview",
+    "astro": "astro",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "overrides": {
+    "yaml": "^2.8.3"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^8.1.0",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.4.1",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.11",
+    "@types/node": "^24.19.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5"
+  }
+}

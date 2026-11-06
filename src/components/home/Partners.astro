@@ -1,0 +1,24 @@
+---
+import SectionHead from "@/components/ui/SectionHead.astro";
+import PersonCard from "@/components/team/PersonCard.astro";
+import { home } from "@/config/home";
+import { teamGroups } from "@/config/team";
+import { getTeam } from "@/lib/team";
+
+const partners = (await getTeam()).filter((person) => person.data.group === teamGroups[0]);
+---
+
+{
+  partners.length > 0 && (
+    <section class="section shell" aria-labelledby="partners-title">
+      <SectionHead id="partners-title" title={home.team.title} link={home.team.link} />
+      <ul class="mt-12 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:mt-16 lg:grid-cols-6">
+        {partners.map((person, index) => (
+          <li class="reveal" style={`--i:${index}`}>
+            <PersonCard person={person} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

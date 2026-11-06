@@ -1,0 +1,279 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import Wordmark from "@/components/ui/Wordmark.astro";
+import { navigation, siteConfig } from "@/config/site";
+
+interface Props {
+  /** Transparent with light text over a dark hero, until the hero scrolls away. */
+  overlay?: boolean;
+}
+
+const { overlay = false } = Astro.props;
+const { primary } = siteConfig.actions;
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => href !== "/" && path.startsWith(href);
+---
+
+<header class="site-header fixed inset-x-0 top-0 z-50" data-header data-overlay={overlay ? "" : undefined}>
+  <div class="header-bar relative z-20">
+    <div class="shell flex h-(--header-h) items-center gap-4 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-10">
+      <a href="/" class="mr-auto flex shrink-0 justify-self-start lg:mr-0" aria-label={`${siteConfig.name} home`} data-logo-menu-trigger>
+        <Wordmark class="h-5" />
+      </a>
+
+      <nav class="hidden lg:block" aria-label="Main">
+        <ul class="flex items-center gap-7">
+          {
+            navigation.map((item) => (
+              <li>
+                <a href={item.href} class="nav-link" aria-current={isCurrent(item.href) ? "page" : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="flex items-center gap-2 justify-self-end">
+        <a href={primary.href} class="header-cta btn btn-primary btn-sm hidden sm:inline-flex">
+          {primary.label}
+          <Icon name="arrow-right" class="arrow" />
+        </a>
+
+        <button
+          type="button"
+          class="menu-toggle -mr-2 flex h-11 items-center gap-2.5 px-2 text-[0.9375rem] font-medium lg:hidden"
+          aria-expanded="false"
+          aria-controls="mobile-nav"
+          data-mobile-toggle
+        >
+          <span data-toggle-label>Menu</span>
+          <span class="menu-bars" aria-hidden="true"><span></span><span></span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mobile-nav" class="mobile-nav on-night fixed inset-0 z-10 overflow-y-auto lg:hidden" inert data-mobile-nav>
+    <nav class="shell flex min-h-full flex-col pt-[calc(var(--header-h)+2.5rem)] pb-10" aria-label="Mobile">
+      <ul class="grid gap-1">
+        {
+          navigation.map((item, index) => (
+            <li class="mobile-item" style={`--i:${index}`}>
+              <a
+                href={item.href}
+                class="block py-1.5 text-[clamp(2.4rem,1.6rem+4vw,3.4rem)] leading-tight tracking-[-0.03em]"
+                aria-current={isCurrent(item.href) ? "page" : undefined}
+                data-menu-link
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="mt-auto grid gap-8 pt-14">
+        <a href={primary.href} class="btn btn-light w-full sm:w-auto sm:justify-self-start" data-menu-link>
+          {primary.label}
+          <Icon name="arrow-right" class="arrow" />
+        </a>
+        <p class="label">
+          <a href={`mailto:${siteConfig.email}`} class="link">{siteConfig.email}</a>
+        </p>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    transition: transform 0.5s var(--ease-out-expo);
+  }
+
+  .site-header[data-hidden] {
+    transform: translateY(-110%);
+  }
+
+  .header-bar {
+    background: transparent;
+    transition:
+      background-color 0.35s,
+      color 0.35s;
+  }
+
+  [data-scrolled] .header-bar {
+    background: var(--page);
+  }
+
+  /* Over the hero: light links and a pale call to action. */
+  [data-overlay]:not([data-scrolled], [data-mobile-open]) .header-bar {
+    color: #fff;
+  }
+
+  [data-overlay]:not([data-scrolled], [data-mobile-open]) .nav-link {
+    color: rgb(255 255 255 / 0.72);
+  }
+
+  [data-overlay]:not([data-scrolled], [data-mobile-open]) .nav-link:hover {
+    color: #fff;
+  }
+
+  [data-overlay]:not([data-scrolled], [data-mobile-open]) .header-cta {
+    --chip-bg: var(--ink);
+    --chip-ink: #fff;
+    background: #ececea;
+    color: var(--ink);
+  }
+
+  [data-mobile-open] .header-bar {
+    background: var(--night);
+    color: var(--night-ink);
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-block;
+    padding-block: 0.4rem;
+    font-size: 0.9375rem;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.45s var(--ease-out-expo);
+  }
+
+  .nav-link:hover,
+  .nav-link[aria-current="page"] {
+    color: var(--ink);
+  }
+
+  .nav-link:hover::after,
+  .nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+
+  [data-mobile-open] .header-cta {
+    --chip-bg: var(--ink);
+    --chip-ink: #fff;
+    background: #ececea;
+    color: var(--ink);
+  }
+
+  .menu-bars {
+    position: relative;
+    display: grid;
+    width: 1.25rem;
+    gap: 5px;
+  }
+
+  .menu-bars span {
+    display: block;
+    height: 1.5px;
+    background: currentColor;
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  [data-mobile-open] .menu-bars span:first-child {
+    transform: translateY(3.25px) rotate(45deg);
+  }
+
+  [data-mobile-open] .menu-bars span:last-child {
+    transform: translateY(-3.25px) rotate(-45deg);
+  }
+
+  .mobile-nav {
+    overscroll-behavior: contain;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.3s,
+      visibility 0s 0.3s;
+  }
+
+  [data-mobile-open] .mobile-nav {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s;
+  }
+
+  .mobile-item {
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition:
+      opacity 0.3s,
+      transform 0.6s var(--ease-out-expo);
+  }
+
+  [data-mobile-open] .mobile-item {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(var(--i) * 45ms + 60ms);
+  }
+
+  .mobile-item a[aria-current="page"] {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-header]");
+
+  if (header) {
+    const toggle = header.querySelector<HTMLButtonElement>("[data-mobile-toggle]");
+    const label = header.querySelector<HTMLElement>("[data-toggle-label]");
+    const sheet = header.querySelector<HTMLElement>("[data-mobile-nav]");
+
+    const setOpen = (open: boolean) => {
+      header.toggleAttribute("data-mobile-open", open);
+      if (sheet) sheet.inert = !open;
+      toggle?.setAttribute("aria-expanded", String(open));
+      if (label) label.textContent = open ? "Close" : "Menu";
+      document.documentElement.style.overflow = open ? "hidden" : "";
+    };
+
+    toggle?.addEventListener("click", () => setOpen(!header.hasAttribute("data-mobile-open")));
+    header.querySelectorAll("[data-menu-link]").forEach((link) => link.addEventListener("click", () => setOpen(false)));
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && header.hasAttribute("data-mobile-open")) {
+        setOpen(false);
+        toggle?.focus();
+      }
+    });
+
+    window.matchMedia("(min-width: 64rem)").addEventListener("change", (event) => {
+      if (event.matches) setOpen(false);
+    });
+
+    /* Hide while scrolling down, return on any scroll up. Never hides near the
+       top, or while the mobile menu is open or the header has focus. */
+    /* With an overlay, the bar turns solid once the hero has scrolled out from under it. */
+    const hero = header.hasAttribute("data-overlay") ? document.querySelector<HTMLElement>("main > :first-child") : null;
+    const solidAfter = () => (hero ? hero.offsetHeight - header.offsetHeight : 8);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const busy = header.hasAttribute("data-mobile-open") || header.contains(document.activeElement);
+      header.toggleAttribute("data-scrolled", y > solidAfter());
+      if (y < 200 || busy) header.removeAttribute("data-hidden");
+      else if (Math.abs(y - lastY) > 6) header.toggleAttribute("data-hidden", y > lastY);
+      lastY = y;
+      document.documentElement.toggleAttribute("data-header-hidden", header.hasAttribute("data-hidden"));
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    header.addEventListener("focusin", () => header.removeAttribute("data-hidden"));
+  }
+</script>

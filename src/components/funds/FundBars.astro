@@ -1,0 +1,40 @@
+---
+import { funds } from "@/config/funds";
+import { formatMoney } from "@/lib/format";
+
+/* One bar per fund, scaled to the largest, with its size printed beside it. */
+const largest = Math.max(...funds.map((fund) => fund.size));
+---
+
+<ul class="grid gap-6" aria-label="Fund sizes">
+  {
+    funds.map((fund, index) => (
+      <li class="reveal grid grid-cols-[5.5rem_1fr_auto] items-center gap-x-5 sm:grid-cols-[7rem_1fr_4.5rem]" style={`--i:${index}`}>
+        <span>
+          <span class="block leading-tight">{fund.name}</span>
+          <span class="label tabular">{fund.vintage}</span>
+        </span>
+        <span class="bar-track" aria-hidden="true">
+          <span class="bar" style={`--size:${(fund.size / largest) * 100}%`} />
+        </span>
+        <span class="text-right tabular">{formatMoney(fund.size)}</span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .bar-track {
+    display: block;
+    height: 0.5rem;
+  }
+
+  .bar {
+    display: block;
+    width: var(--size);
+    height: 100%;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(90deg, #8fb6ff, var(--blue));
+  }
+
+</style>

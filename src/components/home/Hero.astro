@@ -1,0 +1,55 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import { home } from "@/config/home";
+import { siteConfig } from "@/config/site";
+
+const { hero } = home;
+const { primary } = siteConfig.actions;
+---
+
+<section class="hero on-night grain relative isolate flex min-h-[max(38rem,100svh)] items-center overflow-hidden" aria-labelledby="hero-title">
+  <Image
+    src={hero.image}
+    alt={hero.imageAlt}
+    widths={[800, 1280, 1920, 2560]}
+    sizes="100vw"
+    loading="eager"
+    fetchpriority="high"
+    class="hero-photo absolute inset-0 -z-10 size-full object-cover object-bottom"
+  />
+  <div class="hero-shade absolute inset-0 -z-10" aria-hidden="true"></div>
+
+  <div class="shell flex flex-col items-center pt-(--header-h) pb-[18vh] text-center">
+    <h1 id="hero-title" class="rise max-w-[17ch] text-display-xl text-white/90">{hero.title}</h1>
+    <p class="rise mt-7 max-w-xl text-lead text-white/70" style="--i:1">{hero.lead}</p>
+    <div class="rise mt-10 flex flex-wrap justify-center gap-3" style="--i:2">
+      <a href={primary.href} class="btn btn-light">
+        {primary.label}
+        <Icon name="arrow-right" class="arrow" />
+      </a>
+      <a href={hero.secondary.href} class="btn btn-outline">{hero.secondary.label}</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    --grain: 0.55;
+    background: #2a2b31;
+  }
+
+  .hero-photo {
+    animation: settle 2.4s var(--ease-out-expo) both;
+  }
+
+  @keyframes settle {
+    from {
+      transform: scale(1.05);
+    }
+  }
+
+  .hero-shade {
+    background: linear-gradient(180deg, rgb(18 18 18 / 0.35), rgb(18 18 18 / 0.05) 45%, rgb(18 18 18 / 0.45));
+  }
+</style>

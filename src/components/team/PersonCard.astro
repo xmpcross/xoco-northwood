@@ -1,0 +1,53 @@
+---
+import { Image } from "astro:assets";
+import { personHref, type Person } from "@/lib/team";
+
+interface Props {
+  person: Person;
+  size?: "lg" | "md";
+  headingLevel?: "h2" | "h3";
+  eager?: boolean;
+}
+
+const { person, size = "md", headingLevel = "h3", eager = false } = Astro.props;
+const { name, role, location, portrait } = person.data;
+const Heading = headingLevel;
+---
+
+<article class="person group relative">
+  <div class="media aspect-4/5">
+    <Image
+      src={portrait}
+      alt={`Portrait of ${name}`}
+      widths={size === "lg" ? [400, 640, 900] : [320, 480, 640]}
+      sizes={size === "lg"
+        ? "(min-width: 1024px) 26rem, (min-width: 640px) 50vw, 100vw"
+        : "(min-width: 1024px) 19rem, (min-width: 640px) 33vw, 50vw"}
+      loading={eager ? "eager" : "lazy"}
+      class="portrait person-photo size-full object-cover object-top"
+    />
+  </div>
+  <Heading class:list={["mt-4 font-medium tracking-[-0.02em]", size === "lg" ? "text-title" : "text-lg"]}>
+    <a href={personHref(person)} class="link after:absolute after:inset-0">{name}</a>
+  </Heading>
+  <p class="label mt-1">{role}, {location}</p>
+</article>
+
+<style>
+  .person-photo {
+    transition: transform 1.2s var(--ease-out-expo);
+  }
+
+  .person:hover .person-photo {
+    transform: scale(1.03);
+  }
+
+  .person:has(a:focus-visible) {
+    outline: 2px solid var(--green);
+    outline-offset: 6px;
+  }
+
+  .person a:focus-visible {
+    outline: none;
+  }
+</style>

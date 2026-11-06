@@ -1,0 +1,265 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import { getEntries, render } from "astro:content";
+import { Image } from "astro:assets";
+import ShareSheet from "@/components/chrome/ShareSheet.astro";
+import EntryCard from "@/components/insights/EntryCard.astro";
+import CompanyLogo from "@/components/ui/CompanyLogo.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatDate } from "@/lib/format";
+import { authorsOf, categoryHref, categoryLabel, entryHref, getInsights, relatedEntries } from "@/lib/insights";
+import { companyHref } from "@/lib/portfolio";
+import { articleSchema } from "@/lib/schema";
+import { getTeam, personHref, teamById } from "@/lib/team";
+
+export const getStaticPaths = (async () => {
+  const entries = await getInsights();
+  return entries.map((entry, index) => ({
+    params: { slug: entry.id },
+    props: { entry, newer: entries[index - 1], older: entries[index + 1], related: relatedEntries(entry, entries) },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { entry, newer, older, related } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, cover, coverAlt, coverCredit, category, date, updated } = entry.data;
+const team = teamById(await getTeam());
+const authors = authorsOf(entry, team);
+const companies = await getEntries(entry.data.companies);
+const letter = category === "letters";
+const url = new URL(entryHref(entry), siteConfig.siteUrl).toString();
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  image={cover}
+  imageAlt={coverAlt}
+  type="article"
+  structuredData={articleSchema(entry, authors, cover?.src)}
+>
+  <div class="read-progress fixed inset-x-0 top-(--header-h) z-40 h-px origin-left" aria-hidden="true" data-progress></div>
+
+  <article>
+    <header class="shell pt-12 sm:pt-16 lg:pt-24">
+      <div class="mx-auto max-w-3xl">
+      <div>
+        <p class="rise label">
+          <a href={categoryHref(category)} class="link-quiet text-ink">{categoryLabel(category)}</a>
+          <span aria-hidden="true" class="mx-1.5">·</span>
+          <time datetime={date.toISOString()}>{formatDate(date)}</time>
+        </p>
+        <h1 class="rise mt-6 text-display-lg" style="--i:1">{title}</h1>
+        <p class="rise mt-8 max-w-3xl text-lead text-muted" style="--i:2">{description}</p>
+      </div>
+      <div class="rise mt-10 flex flex-wrap items-center justify-between gap-6 border-t border-line pt-6" style="--i:3">
+        <ul class="flex flex-wrap gap-x-8 gap-y-4" aria-label={authors.length > 1 ? "Authors" : "Author"}>
+          {
+            authors.map((person) => (
+              <li>
+                <a href={personHref(person)} class="group flex items-center gap-3">
+                  <Image src={person.data.portrait} alt="" widths={[80, 120]} sizes="2.5rem" loading="eager" class="portrait size-10 object-cover object-top" />
+                  <span class="leading-tight">
+                    <span class="link block">{person.data.name}</span>
+                    <span class="label">{person.data.role}</span>
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" data-share-open hidden>
+          <Icon name="social-share" class="size-3.5" />
+          Share
+        </button>
+      </div>
+      </div>
+    </header>
+
+    {
+      cover && (
+        <figure class="rise shell mt-12 lg:mt-16" style="--i:4">
+          <div class="aspect-3/2 overflow-hidden bg-sunken sm:aspect-21/9">
+            <Image
+              src={cover}
+              alt={coverAlt ?? ""}
+              widths={[640, 1024, 1600, 2200]}
+              sizes="(min-width: 1440px) 84rem, 100vw"
+              loading="eager"
+              fetchpriority="high"
+              class="size-full object-cover"
+            />
+          </div>
+          {coverCredit && (
+            <figcaption class="label mt-3">
+              Photo: <a href={coverCredit.url} class="link-quiet">{coverCredit.name}</a>
+            </figcaption>
+          )}
+        </figure>
+      )
+    }
+
+    <div class="shell py-14 lg:py-20">
+      <div class="mx-auto max-w-3xl min-w-0">
+        <div class:list={["prose", letter && "letter"]} data-prose>
+          <Content />
+        </div>
+
+        {
+          letter && authors.length > 0 && (
+            <div class="mt-14">
+              <p class="text-lg text-ink-soft">With thanks,</p>
+              <ul class="mt-6 grid gap-6 sm:grid-cols-2">
+                {authors.map((person) => (
+                  <li>
+                    <p class="text-title">{person.data.name}</p>
+                    <p class="label mt-1">{person.data.role}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+
+        {
+          updated && (
+            <p class="label mt-14">
+              Updated <time datetime={updated.toISOString()}>{formatDate(updated)}</time>
+            </p>
+          )
+        }
+
+        <div class="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
+          <p class="label">Share this {letter ? "letter" : "piece"}</p>
+          <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" data-share-open hidden>
+            <Icon name="social-share" class="size-3.5" />
+            Share
+          </button>
+        </div>
+
+        {
+          companies.length > 0 && (
+            <section class="mt-12" aria-labelledby="companies-title">
+              <h2 id="companies-title" class="label">
+                Companies in this {letter ? "letter" : "piece"}
+              </h2>
+              <ul class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {companies.map((company) => (
+                  <li>
+                    <a href={companyHref(company)} class="mentioned flex h-24 items-center rounded-(--radius) bg-surface px-5 transition-colors hover:bg-wash">
+                      <CompanyLogo id={company.id} name={company.data.name} class="text-[0.9rem]" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          (newer || older) && (
+            <nav aria-label="More entries" class="mt-16 grid gap-8 border-t border-line pt-8 sm:grid-cols-2">
+              {older ? (
+                <a href={entryHref(older)} class="group">
+                  <span class="label flex items-center gap-2">
+                    <Icon name="arrow-left" class="size-3" /> Previous
+                  </span>
+                  <span class="link mt-2 inline text-lg">{older.data.title}</span>
+                </a>
+              ) : (
+                <span />
+              )}
+              {newer && (
+                <a href={entryHref(newer)} class="group sm:text-right">
+                  <span class="label flex items-center gap-2 sm:justify-end">
+                    Next <Icon name="arrow-right" class="size-3" />
+                  </span>
+                  <span class="link mt-2 inline text-lg">{newer.data.title}</span>
+                </a>
+              )}
+            </nav>
+          )
+        }
+      </div>
+    </div>
+  </article>
+
+  <ShareSheet title={title} url={url} />
+
+  {
+    related.length > 0 && (
+      <section class="section bg-surface" aria-labelledby="related-title">
+        <div class="shell">
+          <h2 id="related-title" class="text-display-md">
+            Keep reading
+          </h2>
+          <div class="mt-12 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((item) => (
+              <EntryCard entry={item} team={team} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .read-progress {
+    background: var(--ink);
+    transform: scaleX(0);
+    transition: top 0.5s var(--ease-out-expo);
+  }
+
+  :global(html[data-header-hidden]) .read-progress {
+    top: 0;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .read-progress {
+      animation: progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+
+  @keyframes progress {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* A letter opens on its salutation, set a size up. */
+  .letter > :global(p:first-child) {
+    font-size: 1.35em;
+    color: var(--ink);
+  }
+
+  .mentioned :global(.company-logo) {
+    max-width: 100%;
+  }
+</style>
+
+<script>
+  const progress = document.querySelector<HTMLElement>("[data-progress]");
+  if (progress && !CSS.supports("animation-timeline: scroll()")) {
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+  }
+
+  /* Wide tables scroll inside their own box on a phone. */
+  document.querySelectorAll<HTMLTableElement>("[data-prose] table").forEach((table) => {
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    table.replaceWith(wrap);
+    wrap.append(table);
+  });
+
+</script>

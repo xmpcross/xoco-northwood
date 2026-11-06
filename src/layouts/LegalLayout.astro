@@ -1,0 +1,54 @@
+---
+import { formatDate } from "@/lib/format";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+/** The layout for the Markdown pages in `src/pages/legal`. */
+interface Props {
+  frontmatter: {
+    title: string;
+    description: string;
+    /** The date the page last changed, as YYYY-MM-DD. */
+    updated: string;
+  };
+}
+
+const { title, description, updated } = Astro.props.frontmatter;
+const links = [
+  { label: "Privacy", href: "/legal/privacy/" },
+  { label: "Terms of use", href: "/legal/terms/" },
+  { label: "Important information", href: "/legal/disclosures/" },
+];
+const path = Astro.url.pathname;
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="shell pt-16 pb-24 sm:pt-24 lg:pb-32">
+    <header class="mx-auto max-w-3xl">
+      <nav aria-label="Legal" class="rise">
+        <ul class="flex flex-wrap gap-x-6 gap-y-2">
+          {
+            links.map((link) => (
+              <li>
+                <a href={link.href} class="label link-quiet" aria-current={path === link.href ? "page" : undefined}>
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <h1 class="rise mt-10 text-display-lg" style="--i:1">{title}</h1>
+      <p class="rise label mt-6" style="--i:2">Last updated <time datetime={updated}>{formatDate(new Date(updated))}</time></p>
+    </header>
+    <div class="prose mx-auto mt-12 max-w-3xl">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  [aria-current="page"] {
+    color: var(--ink);
+    text-decoration-color: var(--ink);
+  }
+</style>

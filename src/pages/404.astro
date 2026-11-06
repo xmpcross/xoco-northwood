@@ -1,0 +1,25 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found" description="The page you were looking for does not exist or has moved." noindex>
+  <section class="shell grid min-h-[calc(100svh-var(--header-h))] content-center py-24">
+    <p class="rise label tabular">404</p>
+    <h1 class="rise mt-6 max-w-[14ch] text-display-xl" style="--i:1">This path leads nowhere.</h1>
+    <p class="rise mt-8 max-w-lg text-lead text-muted" style="--i:2">
+      The page may have moved, or the link was mistyped. The portfolio, the team and the journal are all a click away.
+    </p>
+    <div class="rise mt-12 flex flex-wrap items-center gap-x-8 gap-y-4" style="--i:3">
+      <a href="/" class="btn btn-primary">Back to the homepage <Icon name="arrow-right" class="arrow" /></a>
+      <a href="/portfolio/" class="group inline-flex items-center gap-2 font-medium">
+        <span class="link">Portfolio</span>
+        <Icon name="arrow-right" class="arrow" />
+      </a>
+      <a href="/insights/" class="group inline-flex items-center gap-2 font-medium">
+        <span class="link">Insights</span>
+        <Icon name="arrow-right" class="arrow" />
+      </a>
+    </div>
+  </section>
+</BaseLayout>

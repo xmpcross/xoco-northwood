@@ -1,0 +1,24 @@
+---
+interface Props {
+  title: string;
+  lead?: string;
+  /** Heading id, for `aria-labelledby` on the section. */
+  id?: string;
+}
+
+const { title, lead, id } = Astro.props;
+---
+
+<header class="shell pt-16 pb-14 sm:pt-24 lg:pb-20">
+  <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+    <h1 id={id} class="rise text-display-xl">{title}</h1>
+    {
+      lead && (
+        <p class="rise mt-6 max-w-xl text-lead text-muted" style="--i:1">
+          {lead}
+        </p>
+      )
+    }
+  </div>
+  <slot />
+</header>

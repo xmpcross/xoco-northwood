@@ -1,0 +1,131 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { about } from "@/config/about";
+import { offices } from "@/config/contact";
+import { funds } from "@/config/funds";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatMoney } from "@/lib/format";
+import { companyHref, getCompanies } from "@/lib/portfolio";
+
+const companies = await getCompanies();
+
+/* Hand-written milestones, joined by every fund close and every exit in the portfolio. */
+const events = [
+  ...about.timeline.milestones.map((item) => ({ year: item.year, text: item.text, href: undefined as string | undefined })),
+  ...funds.map((fund) => ({ year: fund.vintage, text: `${fund.name} closes at ${formatMoney(fund.size)}.`, href: "/funds/" })),
+  ...companies
+    .flatMap((company) => {
+      const exit = company.data.exit;
+      if (!exit) return [];
+      const name = company.data.name;
+      const text =
+        exit.type === "IPO"
+          ? `${name} lists${exit.by ? ` on ${exit.by}` : " publicly"}.`
+          : `${name} is acquired${exit.by ? ` by ${exit.by}` : ""}.`;
+      return [{ year: exit.year, text, href: companyHref(company) }];
+    }),
+];
+const years = [...new Set(events.map((event) => event.year))].sort((a, b) => a - b);
+const timeline = years.map((year) => ({ year, events: events.filter((event) => event.year === year) }));
+---
+
+<BaseLayout title={about.title} description={about.lead}>
+  <PageHeader title={about.title} lead={about.lead} />
+
+  <figure class="shell">
+    <Image
+      src={about.image}
+      alt={about.imageAlt}
+      widths={[800, 1280, 1920, 2400]}
+      sizes="(min-width: 1440px) 84rem, 100vw"
+      loading="eager"
+      class="rise aspect-4/3 w-full rounded-(--radius) object-cover sm:aspect-21/9"
+      style="--i:2"
+    />
+    <figcaption class="label mt-3">
+      Photo: <a href={about.imageCredit.url} class="link-quiet">{about.imageCredit.name}</a>
+    </figcaption>
+  </figure>
+
+  <section class="section shell grid gap-10 lg:grid-cols-12" aria-labelledby="story-title">
+    <h2 id="story-title" class="reveal text-display-md lg:col-span-5">{about.story.title}</h2>
+    <div class="grid gap-6 text-lg text-ink-soft lg:col-span-6 lg:col-start-7">
+      {about.story.paragraphs.map((paragraph) => <p class="reveal">{paragraph}</p>)}
+    </div>
+  </section>
+
+  <section class="section on-night grain glow relative isolate overflow-hidden" aria-labelledby="principles-title">
+    <div class="shell">
+      <h2 id="principles-title" class="reveal text-display-lg">{about.principles.title}</h2>
+      <dl class="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+        {
+          about.principles.items.map((item, index) => (
+            <div class="reveal" style={`--i:${index}`}>
+              <dt class="text-title">{item.title}</dt>
+              <dd class="mt-4 text-night-muted">{item.body}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="section shell" aria-labelledby="timeline-title">
+    <h2 id="timeline-title" class="reveal text-display-md">{about.timeline.title}</h2>
+    <ol class="mt-12 border-t border-ink">
+      {
+        timeline.map(({ year, events }) => (
+          <li class="reveal grid gap-3 border-b border-line py-6 sm:grid-cols-12 sm:gap-10">
+            <p class="text-title tabular sm:col-span-2">{year}</p>
+            <ul class="grid gap-2 sm:col-span-9 sm:col-start-4 sm:pt-1.5">
+              {events.map((event) => (
+                <li class="text-ink-soft">
+                  {event.href ? (
+                    <a href={event.href} class="link-quiet">
+                      {event.text}
+                    </a>
+                  ) : (
+                    event.text
+                  )}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section class="section bg-surface" aria-labelledby="offices-title">
+    <div class="shell">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <h2 id="offices-title" class="reveal text-display-md">Offices</h2>
+        <a href="/contact/" class="group inline-flex items-center gap-2 font-medium">
+          <span class="link">Contact us</span>
+          <Icon name="arrow-right" class="arrow" />
+        </a>
+      </div>
+      <ul class="mt-12 grid gap-10 sm:grid-cols-3">
+        {
+          offices.map((office) => (
+            <li class="reveal">
+              <p class="text-title">{office.city}</p>
+              <address class="mt-3 text-muted not-italic">
+                {office.address.map((line) => (
+                  <span class="block">{line}</span>
+                ))}
+              </address>
+              {office.phone && (
+                <a href={`tel:${office.phone.replace(/\s/g, "")}`} class="link-quiet mt-3 inline-block tabular">
+                  {office.phone}
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

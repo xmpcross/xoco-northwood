@@ -1,0 +1,27 @@
+---
+import FundBars from "@/components/funds/FundBars.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { home } from "@/config/home";
+import { formatMoney } from "@/lib/format";
+import { fundTotals } from "@/lib/funds";
+
+const totals = fundTotals();
+---
+
+<section class="section bg-surface" aria-labelledby="funds-title">
+  <div class="shell grid gap-14 lg:grid-cols-12 lg:gap-10">
+    <div class="reveal lg:col-span-5">
+      <h2 id="funds-title" class="text-display-lg">{home.funds.title}</h2>
+      <p class="mt-6 max-w-md text-lead text-muted">{home.funds.lead}</p>
+      <p class="text-stat mt-10">{formatMoney(totals.capital)}</p>
+      <p class="label mt-3">committed across {totals.funds} funds since {totals.since}</p>
+      <a href="/funds/" class="group mt-10 inline-flex items-center gap-2 font-medium">
+        <span class="link">Fund statistics</span>
+        <Icon name="arrow-right" class="arrow" />
+      </a>
+    </div>
+    <div class="lg:col-span-6 lg:col-start-7 lg:self-end">
+      <FundBars />
+    </div>
+  </div>
+</section>

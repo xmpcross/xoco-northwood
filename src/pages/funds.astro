@@ -1,0 +1,219 @@
+---
+import { Image } from "astro:assets";
+import fundsPhoto from "@/assets/images/funds.jpg";
+import Breakdown from "@/components/funds/Breakdown.astro";
+import CompanyLogo from "@/components/ui/CompanyLogo.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { funds, fundsPage } from "@/config/funds";
+import { sectors } from "@/config/portfolio";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatDate, formatMoney, formatMultiple, formatPercent } from "@/lib/format";
+import { fundTotals } from "@/lib/funds";
+import { companyHref, getCompanies, portfolioHref, portfolioStats, sectorHref, sectorLabel, statusLabel } from "@/lib/portfolio";
+
+const totals = fundTotals();
+const companies = await getCompanies();
+const stats = portfolioStats(companies);
+const asOf = formatDate(new Date(fundsPage.asOf));
+
+const headline = [
+  { value: formatMoney(totals.capital), label: "committed capital" },
+  { value: String(totals.funds), label: "funds since " + totals.since },
+  { value: String(totals.companies), label: "companies backed" },
+  { value: String(totals.exits), label: "exits" },
+];
+---
+
+<BaseLayout title={fundsPage.title} description={fundsPage.lead}>
+  <PageHeader title={fundsPage.title} lead={fundsPage.lead} />
+
+  <section class="shell" aria-label="Totals">
+    <dl class="rise grid grid-cols-2 gap-y-10 border-t border-ink pt-8 lg:grid-cols-4" style="--i:2">
+      {
+        headline.map((stat) => (
+          <div class="flex flex-col-reverse gap-2">
+            <dt class="label">{stat.label}</dt>
+            <dd class="text-stat">{stat.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+
+  <section class="section shell" aria-labelledby="funds-title">
+    <h2 id="funds-title" class="reveal text-display-md">By fund</h2>
+    <div class="table-scroll reveal mt-10">
+      <table class="funds-table w-full min-w-[56rem] text-left tabular">
+        <caption class="sr-only">Fund figures as of {asOf}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Fund</th>
+            <th scope="col">Vintage</th>
+            <th scope="col" class="w-[22%]">Size</th>
+            <th scope="col">Companies</th>
+            <th scope="col">Exits</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-right">TVPI</th>
+            <th scope="col" class="text-right">DPI</th>
+            <th scope="col" class="text-right">Net IRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            funds.map((fund) => (
+              <tr>
+                <th scope="row" class="font-normal">
+                  <span class="block">{fund.name}</span>
+                  <span class="label block">{fund.focus}</span>
+                </th>
+                <td>{fund.vintage}</td>
+                <td>
+                  <span class="flex items-center gap-3">
+                    <span class="w-14 shrink-0">{formatMoney(fund.size)}</span>
+                    <span class="bar" style={`--size:${(fund.size / totals.largest) * 100}%`} aria-hidden="true" />
+                  </span>
+                </td>
+                <td>{fund.companies}</td>
+                <td>{fund.exits}</td>
+                <td>{fund.status}</td>
+                <td class="text-right">{formatMultiple(fund.tvpi)}</td>
+                <td class="text-right">{formatMultiple(fund.dpi)}</td>
+                <td class="text-right">{formatPercent(fund.irr)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" class="font-medium">Total</th>
+            <td></td>
+            <td>{formatMoney(totals.capital)}</td>
+            <td>{totals.companies}</td>
+            <td>{totals.exits}</td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="label mt-8 max-w-3xl">As of {asOf}. {fundsPage.disclosure}</p>
+  </section>
+
+  <div class="shell">
+    <Image
+      src={fundsPhoto}
+      alt="The curved glass tower of 20 Fenchurch Street in the City of London, in black and white"
+      widths={[800, 1280, 1920, 2400]}
+      sizes="(min-width: 1440px) 84rem, 100vw"
+      class="aspect-3/2 w-full rounded-(--radius) object-cover sm:aspect-21/9"
+    />
+    <p class="label mt-3">
+      Photo: <a href="https://www.pexels.com/photo/18888780/" class="link-quiet">Altaf Shah / Pexels</a>
+    </p>
+  </div>
+
+  <section class="section shell" aria-labelledby="portfolio-title">
+    <div class="reveal grid gap-6 lg:grid-cols-12 lg:items-end">
+      <h2 id="portfolio-title" class="text-display-md lg:col-span-7">The portfolio, by the numbers</h2>
+      <p class="text-muted lg:col-span-5">
+        Counted from the {stats.total} companies in the <a href="/portfolio/" class="link-quiet text-ink">portfolio directory</a>, by the round of our first investment and the sector they work in.
+      </p>
+    </div>
+    <div class="mt-14 grid gap-14 md:grid-cols-2 lg:grid-cols-3 lg:gap-10">
+      <Breakdown
+        title="By sector"
+        rows={stats.bySector.map((row) => ({ label: sectors[row.key].label, count: row.count, href: sectorHref(row.key) }))}
+      />
+      <Breakdown
+        title="By first investment"
+        rows={stats.byStage.map((row) => ({ label: row.key, count: row.count, href: portfolioHref({ stage: row.key }) }))}
+      />
+      <Breakdown
+        title="By status"
+        rows={[
+          { label: "Active", count: stats.active, href: portfolioHref({ status: "active" }) },
+          { label: "Acquired", count: stats.exited - stats.ipos, href: portfolioHref({ status: "exited" }) },
+          { label: "Public", count: stats.ipos, href: portfolioHref({ status: "exited" }) },
+        ].filter((row) => row.count > 0)}
+      />
+    </div>
+  </section>
+
+  {
+    stats.exits.length > 0 && (
+      <section class="section bg-surface" aria-labelledby="exits-title">
+        <div class="shell">
+          <h2 id="exits-title" class="reveal text-display-md">
+            Realised
+          </h2>
+          <ul class="mt-10 border-t border-ink">
+            {stats.exits.map((company) => (
+              <li class="border-b border-line">
+                <a href={companyHref(company)} class="exit group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 py-5 md:grid-cols-12">
+                  <span class="md:col-span-3">
+                    <CompanyLogo id={company.id} name={company.data.name} class="text-[0.95rem]" />
+                  </span>
+                  <span class="label md:col-span-2">{sectorLabel(company.data.sector)}</span>
+                  <span class="col-span-2 md:col-span-5">{statusLabel(company, false)}</span>
+                  <span class="label tabular md:col-span-1">{company.data.fund}</span>
+                  <span class="text-right tabular md:col-span-1">{company.data.exit?.year}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .table-scroll {
+    overflow-x: auto;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+  }
+
+  .funds-table th,
+  .funds-table td {
+    padding: 1.1rem 1.25rem 1.1rem 0;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .funds-table thead th {
+    padding-block: 0 0.85rem;
+    font-size: var(--text-label);
+    font-weight: 400;
+    color: var(--muted);
+    border-bottom-color: var(--ink);
+  }
+
+  .funds-table tfoot th,
+  .funds-table tfoot td {
+    border-bottom: 0;
+    font-weight: 500;
+  }
+
+  .funds-table tbody th,
+  .funds-table tfoot th {
+    position: sticky;
+    left: 0;
+    background: var(--page);
+  }
+
+  .funds-table .bar {
+    display: block;
+    width: calc(var(--size) * 0.75);
+    height: 0.375rem;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(90deg, #8fb6ff, var(--blue));
+  }
+
+  .exit > :first-child {
+    transition: transform 0.6s var(--ease-out-expo);
+  }
+
+  .exit:hover > :first-child {
+    transform: translateX(0.4rem);
+  }
+</style>

@@ -1,0 +1,43 @@
+---
+import PersonCard from "@/components/team/PersonCard.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { teamGroups, teamPage } from "@/config/team";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getTeam } from "@/lib/team";
+
+const team = await getTeam();
+const groups = teamGroups
+  .map((group) => ({ group, people: team.filter((person) => person.data.group === group) }))
+  .filter(({ people }) => people.length > 0);
+const slug = (group: string) => group.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+---
+
+<BaseLayout title={teamPage.title} description={teamPage.lead}>
+  <PageHeader title={teamPage.title} lead={teamPage.lead} />
+
+  <div class="pb-24 lg:pb-32">
+    {
+      groups.map(({ group, people }, groupIndex) => (
+        <section class:list={["shell", groupIndex > 0 && "mt-24 lg:mt-32"]} aria-labelledby={`group-${slug(group)}`}>
+          <div class="border-t border-ink pt-5">
+            <h2 id={`group-${slug(group)}`} class="text-title">
+              {group}
+            </h2>
+          </div>
+          <ul
+            class:list={[
+              "mt-10 grid gap-x-4 gap-y-12 sm:gap-x-6",
+              groupIndex === 0 ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+            ]}
+          >
+            {people.map((person, index) => (
+              <li class="reveal" style={`--i:${index % 4}`}>
+                <PersonCard person={person} size={groupIndex === 0 ? "lg" : "md"} eager={groupIndex === 0 && index < 3} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>

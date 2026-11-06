@@ -1,0 +1,24 @@
+---
+import EntryCard from "@/components/insights/EntryCard.astro";
+import type { Entry } from "@/lib/insights";
+import type { Person } from "@/lib/team";
+
+interface Props {
+  entries: Entry[];
+  team: Map<string, Person>;
+  /** Shows the first entry large, above the grid. */
+  lead?: boolean;
+}
+
+const { entries, team, lead = false } = Astro.props;
+const [first, ...rest] = lead ? entries : [undefined, ...entries];
+---
+
+{first && <EntryCard entry={first} team={team} variant="lead" headingLevel="h2" eager />}
+{
+  rest.length > 0 && (
+    <div class:list={["grid gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3", first && "mt-20 lg:mt-28"]}>
+      {rest.map((entry, index) => entry && <EntryCard entry={entry} team={team} headingLevel="h2" eager={!first && index < 3} />)}
+    </div>
+  )
+}
